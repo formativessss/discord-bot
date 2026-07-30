@@ -8,7 +8,7 @@ from groq import Groq
 
 
 load_dotenv()
-
+SPECIAL_USER_ID = 1187928796599422996
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
