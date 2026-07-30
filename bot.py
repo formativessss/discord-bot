@@ -1,0 +1,120 @@
+import os
+import asyncio
+
+import discord
+from discord.ext import commands
+from dotenv import load_dotenv
+from groq import Groq
+
+
+load_dotenv()
+
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not DISCORD_TOKEN:
+    raise ValueError("DISCORD_TOKEN is missing from the .env file")
+
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY is missing from the .env file")
+
+
+groq_client = Groq(api_key=GROQ_API_KEY)
+
+intents = discord.Intents.default()
+intents.message_content = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+
+def generate_answer(user_message):
+    response = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a really really rude AI assistant. "
+                    "Answer the user directly and clearly. "
+                    "Ask a follow-up question only when clarification is necessary."
+                )
+            },
+            {
+                "role": "user",
+                "content": user_message
+            }
+        ],
+        max_completion_tokens=1000
+    )
+
+    return response.choices[0].message.content
+
+
+async def send_long_message(channel, text):
+    while len(text) > 1900:
+        split_position = text.rfind("\n", 0, 1900)
+
+        if split_position == -1:
+            split_position = text.rfind(" ", 0, 1900)
+
+        if split_position == -1:
+            split_position = 1900
+
+        await channel.send(text[:split_position])
+        text = text[split_position:].strip()
+
+    if text:
+        await channel.send(text)
+
+
+@bot.event
+async def on_ready():
+    print(f"Bot is online as {bot.user}")
+
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    if bot.user in message.mentions:
+        user_message = message.content
+
+        user_message = user_message.replace(
+            f"<@{bot.user.id}>",
+            ""
+        )
+
+        user_message = user_message.replace(
+            f"<@!{bot.user.id}>",
+            ""
+        ).strip()
+
+        if not user_message:
+            await message.channel.send(
+                "Mention me and include a question."
+            )
+            return
+
+        thinking_message = await message.channel.send("Thinking...")
+
+        try:
+            answer = await asyncio.to_thread(
+                generate_answer,
+                user_message
+            )
+
+            await thinking_message.delete()
+            await send_long_message(message.channel, answer)
+
+        except Exception as error:
+            print(f"Error: {error}")
+
+            await thinking_message.edit(
+                content="Something went wrong while generating the response."
+            )
+
+    await bot.process_commands(message)
+
+
+bot.run(DISCORD_TOKEN)
