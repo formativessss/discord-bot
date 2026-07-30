@@ -101,28 +101,35 @@ async def on_message(message):
 
         if not user_message:
             await message.channel.send(
-                "Mention me and include a question."
+                "Ask smthing u dumb tard"
             )
             return
-
-        thinking_message = await message.channel.send("Thinking...")
+        thinking_message = await message.channel.send("responding retard...")
 
         try:
             answer = await asyncio.to_thread(
-                 generate_answer,
+                generate_answer,
                 user_message,
                 message.author.id
             )
 
-            await thinking_message.delete()
             await send_long_message(message.channel, answer)
 
-        except Exception as error:
-            print(f"Error: {error}")
+            try:
+                await thinking_message.delete()
+            except discord.NotFound:
+                pass
 
-            await thinking_message.edit(
-                content="Something went wrong while generating the response."
-            )
+        except Exception as error:
+            print(f"Error type: {type(error).__name__}")
+            print(f"Error details: {repr(error)}")
+
+            try:
+                await thinking_message.edit(
+                    content="Something went wrong while generating the response."
+                )
+            except discord.NotFound:
+                pass
 
     await bot.process_commands(message)
 
