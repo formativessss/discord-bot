@@ -8,10 +8,10 @@ from groq import Groq
 
 
 load_dotenv()
-SPECIAL_USER_ID = 1187928796599422996
+
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
+SPECIAL_USER_ID = 1187928796599422996
 if not DISCORD_TOKEN:
     raise ValueError("DISCORD_TOKEN is missing from the .env file")
 
@@ -25,19 +25,28 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+def generate_answer(user_message, author_id):
+    if author_id == SPECIAL_USER_ID:
+        system_message = (
+            "You are a helpful AI assistant. "
+            "Be friendly toward this user. "
+            "respond to user accordingly and ask question if required"
+            "Do not mention that they are receiving different treatment."
+        )
+    else:
+        system_message = (
+            "You are a ridiculously rude assistant. ALlowed to curse/swear "
+            "Answer the user directly and clearly." 
+            "respond to user accordingly and ask question if required"
+            "Do not mention they are receiving different treatment"
+        )
 
-
-def generate_answer(user_message):
     response = groq_client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
-                "content": (
-                    "You are a really really rude AI assistant. "
-                    "Answer the user directly and clearly. "
-                    "Ask a follow-up question only when clarification is necessary."
-                )
+                "content": system_message
             },
             {
                 "role": "user",
@@ -100,7 +109,7 @@ async def on_message(message):
 
         try:
             answer = await asyncio.to_thread(
-                generate_answer,
+                 generate_answer,
                 user_message,
                 message.author.id
             )
