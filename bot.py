@@ -5,7 +5,9 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 from groq import Groq
+from collections import defaultdict, deque
 
+chat_history = defaultdict(lambda: deque(maxlen=20))
 
 load_dotenv()
 
@@ -25,7 +27,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
-def generate_answer(user_message, author_id):
+def generate_answer(user_message, author_id, recent_chat):
     if author_id == SPECIAL_USER_ID:
         system_message = (
             "You are a helpful AI assistant. "
@@ -44,15 +46,24 @@ def generate_answer(user_message, author_id):
     response = groq_client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {
-                "role": "system",
-                "content": system_message
-            },
-            {
-                "role": "user",
-                "content": user_message
-            }
-        ],
+    {
+        "role": "system",
+        "content": system_message
+    },
+    {
+        "role": "system",
+        "content": (
+           recent_chat = "\n".join(
+            f"{item['author']}: {item['content']}"
+            for item in list(chat_history[channel_id])[:-1]
+)
+        )
+    },
+    {
+        "role": "user",
+        "content": user_message
+    }
+],
         max_completion_tokens=1000
     )
 
@@ -86,6 +97,16 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    channel_id = message.channel.id
+
+    # Save messages from everyone in this channel
+    chat_history[channel_id].append(
+        {
+            "author": message.author.display_name,
+            "content": message.content
+        }
+    )
+
     if bot.user in message.mentions:
         user_message = message.content
 
@@ -101,16 +122,23 @@ async def on_message(message):
 
         if not user_message:
             await message.channel.send(
-                "Ask smthing u dumb tard"
+                "Ask smthing u idiot"
             )
             return
-        thinking_message = await message.channel.send("responding retard...")
+
+        recent_chat = "\n".join(
+            f"{item['author']}: {item['content']}"
+            for item in chat_history[channel_id]
+        )
+
+        thinking_message = await message.channel.send("ERMMM...")
 
         try:
             answer = await asyncio.to_thread(
                 generate_answer,
                 user_message,
-                message.author.id
+                message.author.id,
+                recent_chat
             )
 
             await send_long_message(message.channel, answer)
