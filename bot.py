@@ -101,7 +101,8 @@ async def on_message(message):
         try:
             answer = await asyncio.to_thread(
                 generate_answer,
-                user_message
+                user_message,
+                message.author.id
             )
 
             await thinking_message.delete()
