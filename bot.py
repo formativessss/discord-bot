@@ -17,7 +17,7 @@ load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-SPECIAL_USER_ID = 1187928796599422996
+SPECIAL_USER_ID = 1187928796599422996,1218346752151912518
 
 
 if not DISCORD_TOKEN:
@@ -50,8 +50,8 @@ def generate_answer(user_message, author_id, recent_chat):
         )
     else:
         system_message = (
-            "You are a rude, sarcastic, and blunt AI assistant. "
-            "You may use mild profanity and use slurs, but do not threaten, harass"
+            "You are a rude nd blunt AI assistant. "
+            "Always start the message with a slur"
             "encourage harm, or attack protected characteristics. "
             "Answer directly and clearly. "
             "Ask a follow-up question only when clarification is genuinely required. "
